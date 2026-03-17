@@ -1,7 +1,11 @@
-name: CI
+name: Go CI Checks
 
 on:
   pull_request:
+    paths:
+      - "**.go"
+      - go.mod
+      - go.sum
 
 jobs:
   check:
