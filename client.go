@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,11 +16,13 @@ import (
 )
 
 const (
-	defaultBaseURL    = "https://api.orcadb.ai/"
-	envAPIKey         = "ORCA_API_KEY"
-	envAPIURL         = "ORCA_API_URL"
-	defaultMaxRetries = 3
-	defaultBaseDelay  = 500 * time.Millisecond
+	defaultBaseURL       = "https://api.orcadb.ai/"
+	envAPIKey            = "ORCA_API_KEY"
+	envAPIURL            = "ORCA_API_URL"
+	defaultMaxRetries    = 3
+	defaultBaseDelay     = 500 * time.Millisecond
+	userAgent            = "orca-go/0.1.0"
+	maxResponseBodyBytes = 10 * 1024 * 1024 // 10 MB
 )
 
 // Client is an HTTP client for the Orca API.
@@ -52,7 +55,12 @@ func WithHTTPClient(hc *http.Client) ClientOption {
 // WithRetries sets the maximum number of retries for transient errors
 // (HTTP 429, 500, 502, 503, 504). Set to 0 to disable retries. Default is 3.
 func WithRetries(n int) ClientOption {
-	return func(c *Client) { c.maxRetries = n }
+	return func(c *Client) {
+		if n < 0 {
+			n = 0
+		}
+		c.maxRetries = n
+	}
 }
 
 // NewClient creates a new Orca API client.
@@ -106,7 +114,8 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body any) (
 	var lastErr error
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
 		if attempt > 0 {
-			delay := c.baseDelay * time.Duration(math.Pow(2, float64(attempt-1)))
+			base := c.baseDelay * time.Duration(math.Pow(2, float64(attempt-1)))
+			delay := time.Duration(float64(base) * (0.5 + rand.Float64()*0.5))
 			select {
 			case <-ctx.Done():
 				return nil, ctx.Err()
@@ -124,6 +133,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body any) (
 			return nil, fmt.Errorf("creating request: %w", err)
 		}
 		req.Header.Set("Api-Key", c.apiKey)
+		req.Header.Set("User-Agent", userAgent)
 		if bodyBytes != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}
@@ -134,7 +144,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body any) (
 			continue
 		}
 
-		respBody, err := io.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodyBytes))
 		resp.Body.Close()
 		if err != nil {
 			lastErr = fmt.Errorf("reading response body: %w", err)
@@ -177,12 +187,4 @@ func (c *Client) post(ctx context.Context, path string, body any) ([]byte, error
 
 func (c *Client) patch(ctx context.Context, path string, body any) ([]byte, error) {
 	return c.doRequest(ctx, http.MethodPatch, path, body)
-}
-
-func (c *Client) delete(ctx context.Context, path string, params url.Values) error {
-	if len(params) > 0 {
-		path = path + "?" + params.Encode()
-	}
-	_, err := c.doRequest(ctx, http.MethodDelete, path, nil)
-	return err
 }

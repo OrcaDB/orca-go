@@ -192,8 +192,8 @@ func TestMemorysetQueryWithFilters(t *testing.T) {
 		t.Fatalf("expected 2 filters, got %d", len(filters))
 	}
 	first := filters[0].(map[string]any)
-	if first["operation"].(string) != "==" {
-		t.Errorf("expected first filter op==, got %s", first["operation"])
+	if first["op"].(string) != "==" {
+		t.Errorf("expected first filter op==, got %s", first["op"])
 	}
 }
 

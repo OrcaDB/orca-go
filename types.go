@@ -63,7 +63,7 @@ type MemoryPatch struct {
 // Filter is a query condition for filtering memories.
 type Filter struct {
 	Field     []string `json:"field"`
-	Operation string   `json:"operation"`
+	Operation string   `json:"op"`
 	Value     any      `json:"value"`
 }
 

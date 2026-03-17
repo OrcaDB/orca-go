@@ -51,7 +51,10 @@ func (m *Memoryset) Refresh(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(data, &m.Metadata)
+	if err := json.Unmarshal(data, &m.Metadata); err != nil {
+		return fmt.Errorf("parsing memoryset metadata: %w", err)
+	}
+	return nil
 }
 
 // --- Query ---

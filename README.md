@@ -5,7 +5,7 @@ A minimal Go client for the [Orca](https://orcadb.ai) API. Zero external depende
 ## Installation
 
 ```bash
-go get github.com/orcadb/orca-go
+go install github.com/orcadb/orca-go@latest
 ```
 
 ## Quick Start
