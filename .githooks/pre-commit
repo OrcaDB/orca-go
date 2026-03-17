@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+printf '\n=== pre-commit checks ===\n\n'
+
+# Formatting ---------------------------------------------------------------
+printf '> gofmt ... '
+bad=$(gofmt -l . 2>&1) || true
+if [ -n "$bad" ]; then
+    printf 'FAIL\nThe following files need formatting:\n%s\nRun: gofmt -w .\n' "$bad"
+    exit 1
+fi
+printf 'ok\n'
+
+# Vet -----------------------------------------------------------------------
+printf '> go vet ... '
+if ! go vet ./... 2>&1; then
+    printf 'FAIL\n'
+    exit 1
+fi
+printf 'ok\n'
+
+# Module tidiness -----------------------------------------------------------
+printf '> go mod tidy ... '
+cp go.mod go.mod.bak
+[ -f go.sum ] && cp go.sum go.sum.bak
+go mod tidy
+if ! diff -q go.mod go.mod.bak >/dev/null 2>&1 || \
+   { [ -f go.sum.bak ] && ! diff -q go.sum go.sum.bak >/dev/null 2>&1; }; then
+    mv go.mod.bak go.mod
+    [ -f go.sum.bak ] && mv go.sum.bak go.sum
+    printf 'FAIL\ngo.mod/go.sum are out of date. Run: go mod tidy\n'
+    exit 1
+fi
+rm -f go.mod.bak go.sum.bak
+printf 'ok\n'
+
+# Tests ---------------------------------------------------------------------
+printf '> go test ... '
+if ! go test ./... 2>&1; then
+    printf 'FAIL\n'
+    exit 1
+fi
+printf 'ok\n'
+
+printf '\n=== all checks passed ===\n\n'

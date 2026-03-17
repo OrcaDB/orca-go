@@ -28,7 +28,7 @@ var testMeta = MemorysetMetadata{
 	ID:         "ms-abc-123",
 	Name:       "test-memoryset",
 	MemoryType: "labeled",
-	Length:      42,
+	Length:     42,
 	LabelNames: []string{"cat", "dog"},
 }
 
