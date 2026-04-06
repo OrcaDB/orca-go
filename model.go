@@ -74,7 +74,7 @@ func WithClassifyTags(tags ...string) ClassifyOption {
 	return func(p *classifyParams) { p.Tags = tags }
 }
 
-// WithClassifySaveTelemetry controls whether prediction telemetry is saved (default true).
+// WithClassifySaveTelemetry controls whether prediction telemetry is saved (default false).
 func WithClassifySaveTelemetry(save bool) ClassifyOption {
 	return func(p *classifyParams) { p.SaveTelemetry = save }
 }
@@ -110,7 +110,7 @@ func (m *ClassificationModel) Predict(ctx context.Context, value string, opts ..
 func (m *ClassificationModel) PredictBatch(ctx context.Context, values []string, opts ...ClassifyOption) ([]ClassificationPrediction, error) {
 	p := &classifyParams{
 		InputValues:         values,
-		SaveTelemetry:       true,
+		SaveTelemetry:       false,
 		UseLookupCache:      true,
 		PartitionFilterMode: "include_global",
 		ConsistencyLevel:    "Bounded",
@@ -191,7 +191,7 @@ func WithRegressTags(tags ...string) RegressOption {
 	return func(p *regressParams) { p.Tags = tags }
 }
 
-// WithRegressSaveTelemetry controls whether prediction telemetry is saved (default true).
+// WithRegressSaveTelemetry controls whether prediction telemetry is saved (default false).
 func WithRegressSaveTelemetry(save bool) RegressOption {
 	return func(p *regressParams) { p.SaveTelemetry = save }
 }
@@ -227,7 +227,7 @@ func (m *RegressionModel) Predict(ctx context.Context, value string, opts ...Reg
 func (m *RegressionModel) PredictBatch(ctx context.Context, values []string, opts ...RegressOption) ([]RegressionPrediction, error) {
 	p := &regressParams{
 		InputValues:         values,
-		SaveTelemetry:       true,
+		SaveTelemetry:       false,
 		UseLookupCache:      true,
 		PartitionFilterMode: "include_global",
 		ConsistencyLevel:    "Bounded",
