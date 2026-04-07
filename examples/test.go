@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
+	"time"
 
 	orca "github.com/orcadb/orca-go"
 )
@@ -64,4 +66,38 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("Label: %d, Confidence: %.3f\n", *pred.Label, pred.Confidence)
+
+	// Batched predictions — individual Predict calls are automatically
+	// grouped into batch requests, flushing when the batch reaches 10
+	// items or after 1000ms, whichever comes first.
+	batcher := model.NewBatcher(
+		[]orca.BatcherOption{
+			orca.WithBatchSize(10),
+			orca.WithBatchDelay(1000 * time.Millisecond),
+		},
+	)
+	defer batcher.Close()
+
+	reviews := []string{
+		"Absolutely love this vacuum cleaner!",
+		"Terrible suction, broke after a week.",
+		"Decent for the price, nothing special.",
+		"Best purchase I've made this year.",
+		"Would not recommend to anyone.",
+	}
+
+	var wg sync.WaitGroup
+	for _, review := range reviews {
+		wg.Add(1)
+		go func(text string) {
+			defer wg.Done()
+			p, err := batcher.Predict(ctx, text)
+			if err != nil {
+				log.Printf("prediction error: %v", err)
+				return
+			}
+			fmt.Printf("Review: %q → Label: %d, Confidence: %.3f\n", text, *p.Label, p.Confidence)
+		}(review)
+	}
+	wg.Wait()
 }
